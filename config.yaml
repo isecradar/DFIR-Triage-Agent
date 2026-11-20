@@ -1,0 +1,81 @@
+# =============================================================================
+#  DFIR Triage Agent - configuration
+#  (a second file passed with --config overrides only the keys it contains)
+# =============================================================================
+
+general:
+  workers: 0                # max concurrent tool processes, 0 = auto (CPU count, max 8)
+  heavy_task_limit: 2       # concurrent memory-heavy tasks ($MFT, EvtxECmd, Hayabusa, Chainsaw ~2 GB RAM each)
+  extract_limit: 2          # concurrent collection extractions
+  keep_extracted: true      # keep <output>/<host>/_extracted (decoded collection) after processing
+  hash_extracted: true      # SHA-256 of every extracted file -> _extracted/extraction_manifest.csv
+  max_sparse_expand_gb: 8   # rebuild Velociraptor sparse files (.idx) up to this original size
+  # Where collections are decrypted/extracted. Default is the WSL native disk: parsing there is ~6-10x
+  # faster than on /mnt/<drive> (9P file share). Set "" to extract into <output>/<host>/_extracted.
+  # Extracted files stay reachable from Windows at \\wsl.localhost\<distro>\home\<user>\dta-work
+  work_dir: "~/dta-work"
+
+tools:
+  dta_home: ~/.dfir-triage-agent             # where setup.sh installed venv / .NET / Hayabusa / Chainsaw
+  ez_dir: "../Eric Zimmerman Tools/net"      # analyst-provided Eric Zimmerman tools (relative to this file)
+  ez_windows_only: [SrumECmd, SumECmd]       # need Windows ESE libraries -> run via WSL interop
+  recmd_batch: Kroll_Batch.reb               # RECmd batch file in <ez_dir>/RECmd/BatchExamples
+
+collection:
+  # Candidate passwords for encrypted Velociraptor collections (tried before prompting).
+  # Prefer -p / --password-file on the command line over storing case passwords here.
+  passwords: []
+
+# Enable / disable modules (all enabled unless set to false). --skip a,b on the CLI does the same.
+modules:
+  amcache:         {enabled: true}
+  shimcache:       {enabled: true}
+  prefetch:        {enabled: true}
+  recentfilecache: {enabled: true}
+  srum:            {enabled: true}
+  sum:             {enabled: true}   # User Access Logging (Windows Server)
+  recmd:           {enabled: true}
+  regripper:       {enabled: true}
+  lnk:             {enabled: true}
+  jumplists:       {enabled: true}
+  shellbags:       {enabled: true}
+  activities:      {enabled: true}
+  recyclebin:      {enabled: true}
+  filesystem:      {enabled: true}   # $MFT CSV, $J, $LogFile, $SDS, $Boot per volume
+  fs_timeline:     {enabled: true}   # $MFT bodyfile + mactime file system timeline
+  evtx:            {enabled: true}   # EvtxECmd + split into artifact categories
+  hayabusa:        {enabled: true}
+  chainsaw:        {enabled: true}
+  sqlecmd:         {enabled: true}
+  rdpcache:        {enabled: true}   # bmc-tools: extract RDP bitmap cache tiles + collage
+  # Rebuild screen fragments from the tiles (border matching, numpy). Output: 12_Remote_Access/RDP_Reconstructed
+  # max_mse: max border mismatch for a join (lower = fewer, safer joins)
+  # ratio: best join must beat the runner-up by this factor (lower = stricter); min_tiles: smallest fragment kept
+  rdp_reconstruct: {enabled: true, min_tiles: 4, max_mse: 150, ratio: 0.85}
+  schtasks:        {enabled: true}
+  setupapi:        {enabled: true}
+  rawcopy:         {enabled: true}
+  velociraptor:    {enabled: true}
+  # ---- Linux / Unix (UAC collections and Velociraptor collections of Linux hosts) - pure Python
+  linux_accounts:         {enabled: true}   # passwd/shadow/group/sudoers -> UID 0, empty passwords, sudo rights
+  linux_logins:           {enabled: true}   # wtmp / btmp / utmp / lastlog (binary, UTC)
+  linux_syslog:           {enabled: true}   # syslog, messages, auth.log, secure -> timeline + auth events + SSH by IP
+  linux_journal:          {enabled: true}   # systemd journal (needs journalctl on the analysis machine)
+  linux_audit:            {enabled: true}   # auditd: EXECVE command lines, logins, account changes
+  linux_history:          {enabled: true}   # bash/zsh/fish/... history, with timestamps when recorded
+  linux_persistence:      {enabled: true}   # cron, at, systemd, rc/init.d, shell rc, ld.so.preload, keys, sudoers, udev, PAM
+  linux_fs_timeline:      {enabled: true}   # UAC bodyfile -> mactime timeline (UTC)
+  linux_suspicious_files: {enabled: true}   # bodyfile: executables in /tmp,/dev/shm, odd SUID, hidden/deceptive names
+  linux_packages:         {enabled: true}   # dpkg status, dpkg.log, apt history, yum/dnf logs
+  linux_weblogs:          {enabled: true}   # Apache/nginx access logs: SQLi, traversal, webshells, scanners
+  linux_network:          {enabled: true}   # network/SSH config copies, known_hosts, authorized_keys
+  uac_live_response:      {enabled: true}   # copy UAC live_response/, hash_executables/, uac.log
+  chopchopgo:             {enabled: true}   # Sigma on syslog/auth logs + journal export (Linux "Chainsaw")
+  zircolite:              {enabled: true}   # SigmaHQ Linux rules on auditd / Sysmon for Linux
+  # THOR: prepared but disabled. It only runs when enabled AND extended (custom) YARA rules exist in
+  # ~/.dfir-triage-agent/tools/thor/custom-signatures/yara/ - built-in signatures alone are not used.
+  thor:
+    enabled: false
+    require_custom_rules: true
+    args: ["-a", "Filescan", "--intense", "--norescontrol", "--nosoft", "--cross-platform"]
+  # Antivirus scanning is intentionally not supported.

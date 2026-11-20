@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Evidence, case output and extraction folders must never be committed
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.E01
+*.vhd
+*.vhdx
+*.evtx
+_extracted/
+_logs/
+dta-work/
+Cases/
+archived_cases/
+
+# Local configuration overrides (may hold case passwords)
+config.local.yaml
+*.local.yaml
+passwords.txt
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

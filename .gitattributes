@@ -1,0 +1,4 @@
+# Keep LF everywhere (the agent runs in WSL/Linux; CRLF breaks shell scripts and the launcher)
+* text=auto eol=lf
+# Windows PowerShell launcher
+*.ps1 text eol=crlf
